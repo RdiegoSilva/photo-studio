@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estúdio de Impressão de Fotos</title>
+<meta name="theme-color" content="#080c1c" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#080c1c" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fotos">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-32.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>
+/* ==========================================================
+   TEMA "NOITE ROXA" — azul-marinho, roxo neon e ondas suaves
+   Responsivo: desktop (2 colunas) · tablet · celular (app)
+   ========================================================== */
+
+/* ---- 1. Variáveis ---- */
+:root{
+  --bg:#080c1c;--panel:#0f1429;--panel2:#161c38;--line:#232b4f;--tx:#eef1ff;--mut:#98a2c9;
+  --ac:#7c5cff;--ac2:#5a3bdd;--glow:#7c5cff55;--soft:#2b2470;
+  --hdr:linear-gradient(100deg,#0a0f24,#0d1230 60%,#11163f);--r:18px;
+}
+:root[data-theme="light"]{
+  --bg:#eceffa;--panel:#fff;--panel2:#f2f4fd;--line:#d8def2;--tx:#151a36;--mut:#5b6590;--glow:#7c5cff33;--soft:#e4defc;
+  --hdr:linear-gradient(100deg,#fff,#f3f0ff);
+}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;scroll-padding-top:env(safe-area-inset-top,0px)}
+
+/* ---- 2. Base ---- */
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  overscroll-behavior-y:none;-webkit-font-smoothing:antialiased}
+h1,h2{margin:0}
+[hidden]{display:none!important}
+svg.ic{width:1.3em;height:1.3em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+label{display:block;margin:14px 0 6px;font-size:12.5px;font-weight:600;color:var(--mut)}
+.val{float:right;color:var(--tx);font-variant-numeric:tabular-nums}
+.tip{margin:6px 0 0;font-size:13px;color:var(--mut)}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+
+/* ---- 3. Campos ---- */
+select,input[type=number]{width:100%;min-height:44px;padding:9px 12px;font:inherit;color:var(--tx);background:var(--panel2);border:1px solid var(--line);border-radius:12px}
+select:focus,input:focus,button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+input[type=color]{width:100%;height:44px;padding:3px;background:var(--panel2);border:1px solid var(--line);border-radius:12px}
+input[type=range]{width:100%;height:28px;accent-color:var(--ac)}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--ac)}
+.chk{display:flex;align-items:center;gap:10px;margin-top:14px}
+
+/* ---- 4. Botões ---- */
+button{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:10px 16px;font-family:inherit;font-size:15px;font-weight:600;color:var(--tx);cursor:pointer;touch-action:manipulation;
+  background:var(--panel2);border:1px solid var(--line);border-radius:14px;transition:background .15s,transform .1s,box-shadow .15s}
+button:hover{border-color:var(--ac)}
+button:active{transform:scale(.97)}
+button svg{color:var(--ac)}
+.pri{color:#fff;background:linear-gradient(135deg,#7c5cff,#5a3bdd);border:0;box-shadow:0 8px 24px var(--glow)}
+.pri svg{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chips button{min-height:34px;padding:4px 14px;font-size:13px;border-radius:99px}
+.chips button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+
+/* ---- 5. Cabeçalho (ondas) ---- */
+header{position:relative;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:18px 26px;overflow:hidden;background:var(--hdr);border-bottom:1px solid var(--line)}
+header::before{content:"";position:absolute;inset:0;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 120' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%236d3df5' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%237c5cff' stop-opacity='.65'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M800 0V120C640 122 430 128 290 112C520 102 650 60 730 0Z' fill='url(%23a)'/%3E%3C/svg%3E") right top/min(900px,100%) 100% no-repeat}
+header>*{position:relative}
+.logo{display:flex;align-items:center;gap:16px;flex:1;min-width:0}
+.logo i{display:grid;place-items:center;flex:none;width:56px;height:56px;color:#fff;background:linear-gradient(145deg,#8b6bff,#5a3bdd);border-radius:16px;box-shadow:0 8px 28px var(--glow),inset 0 0 0 1px #ffffff30}
+.logo i svg{width:30px;height:30px}
+.logo h1{font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-.01em}
+.logo h1 em{font-style:normal;color:var(--ac);text-shadow:0 0 22px var(--glow)}
+.logo small{display:block;color:var(--mut);font-size:15px}
+.badge{padding:5px 14px;font-size:13px;color:var(--mut);background:var(--panel2);border:1px solid var(--line);border-radius:99px}
+#theme{min-width:44px;padding:0}
+
+/* ---- 6. Layout e painel ---- */
+main{display:grid;grid-template-columns:min(440px,38%) 1fr;gap:22px;padding:22px;align-items:start}
+aside{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 10px 40px #0005}
+aside::after{content:"";position:absolute;left:0;right:0;bottom:0;height:130px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 130' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%237c5cff' stop-opacity='.85'/%3E%3Cstop offset='1' stop-color='%235a3bdd' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 130V38C90 8 170 30 250 72S410 112 500 96V130Z' fill='url(%23b)'/%3E%3C/svg%3E") bottom/100% 100% no-repeat}
+nav{position:relative;z-index:2;display:flex;background:var(--panel2);border-bottom:1px solid var(--line)}
+nav button{position:relative;flex:1;flex-direction:column;gap:5px;min-height:76px;padding:12px 4px 10px;font-size:14px;color:var(--mut);background:none;border:0;border-radius:16px 16px 0 0}
+nav button svg{width:28px;height:28px;color:inherit}
+nav button:hover{color:var(--tx)}
+nav button.on{color:#fff;background:linear-gradient(180deg,#8265ff,#5a3bdd);box-shadow:0 0 28px var(--glow)}
+nav button.on::after{content:"";position:absolute;left:16%;right:16%;bottom:0;height:3px;border-radius:3px;background:#cdbfff}
+.pane{position:relative;z-index:1;padding:22px 22px 150px}
+.pane h2{display:flex;align-items:center;gap:10px;font-size:21px;font-weight:800}
+.pane h2 svg{color:var(--ac)}
+.pane h2:not(:first-child){margin-top:30px}
+.box{margin-top:16px;padding:14px;background:var(--panel2);border:1px solid var(--line);border-radius:14px}
+
+/* ---- 7. Fotos ---- */
+#drop{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:16px;padding:30px 14px;text-align:center;cursor:pointer;background:#7c5cff0d;border:2px dashed var(--ac);border-radius:16px;transition:.15s}
+#drop svg{width:48px;height:48px;color:var(--ac);stroke-width:1.7}
+#drop strong{font-size:16px}
+#drop small{color:var(--mut);font-size:13px}
+#drop:hover,#drop.over{background:#7c5cff24;box-shadow:0 0 30px var(--glow)}
+#thumbs{display:grid;grid-template-columns:repeat(auto-fill,74px);gap:10px;margin-top:16px}
+#thumbs div{position:relative;width:74px;height:74px;overflow:hidden;cursor:pointer;border:2px solid var(--line);border-radius:12px}
+#thumbs div.sel{border-color:var(--ac);box-shadow:0 0 0 3px var(--glow)}
+#thumbs img{display:block;width:100%;height:100%;object-fit:cover}
+#thumbs b{position:absolute;left:4px;top:4px;padding:0 7px;font-size:11px;color:#fff;background:#000a;border-radius:99px}
+
+/* ---- 8. Preview ---- */
+.desk{position:sticky;top:16px;display:flex;flex-direction:column;height:calc(100vh - 140px);min-height:460px;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 10px 40px #0005}
+.bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.chip{display:grid;place-items:center;flex:none;width:38px;height:38px;color:#fff;background:linear-gradient(145deg,#7c5cff,#5a3bdd);border-radius:11px}
+.bar span{flex:1;min-width:0;overflow:hidden;font-size:16px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.bar button{width:46px;min-height:46px;padding:0;font-size:22px;border-radius:14px}
+.bar output{min-width:56px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+#scroll{flex:1;overflow:auto;padding:22px;background:linear-gradient(var(--bg),var(--panel))}
+#pages{display:flex;flex-direction:column;align-items:center;gap:30px;width:max-content;min-width:100%}
+.pglabel{margin-bottom:8px;font-size:12.5px;font-weight:600;color:var(--mut)}
+.pg{position:relative}
+.sheet{position:absolute;top:0;left:0;display:grid;transform-origin:top left;color:#000;background:#fff;box-shadow:0 0 0 1px #0002,0 20px 50px #0008}
+.guides .sheet::after{content:"";position:absolute;inset:var(--m);border:.3mm dashed #7c5cff;pointer-events:none}
+.cell{position:relative;overflow:hidden;cursor:pointer;padding:var(--bd);background:var(--bc);border-radius:var(--br)}
+.cell img{display:block;width:100%;height:100%;border-radius:calc(var(--br) - var(--bd))}
+.cell.sel{box-shadow:inset 0 0 0 .7mm #7c5cff}
+.cell.empty{display:grid;place-items:center;cursor:default;font-size:6mm;color:#8c96bd;background:#e7ebf8;box-shadow:inset 0 0 0 .3mm #b9c1dc}
+.cut .cell{outline:.15mm solid #8a8a8a}
+
+/* ---- 9. Tablet (700–979px) ---- */
+@media(max-width:979px){
+  main{grid-template-columns:350px 1fr;gap:16px;padding:16px}
+  .logo h1{font-size:20px}.logo small{font-size:13px}
+  nav button{min-height:68px;font-size:12.5px}
+  .pane{padding:18px 18px 150px}
+}
+
+/* ---- 10. Celular (app iOS/Android) ---- */
+@media(max-width:699px){
+  body{padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))}
+  header{padding:12px 14px;gap:8px}
+  .logo{gap:11px}.logo i{width:42px;height:42px;border-radius:12px}.logo i svg{width:23px;height:23px}
+  .logo h1{font-size:16px}.logo small{display:none}
+  .badge,#print .lbl{display:none}
+  #print{width:46px;padding:0}
+  main{display:flex;flex-direction:column;gap:14px;padding:12px}
+  .desk{order:-1;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;height:44vh;height:44dvh;min-height:260px}
+  .bar{padding:8px 10px;gap:6px}.bar button{width:40px;min-height:40px;font-size:20px}.bar output{min-width:46px;font-size:13px}.bar span{font-size:13px}.chip{width:32px;height:32px}
+  #scroll{padding:14px}
+  aside::after{display:none}
+  .pane{padding:18px 16px 24px}
+  nav{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:0 6px env(safe-area-inset-bottom,0px);background:var(--panel);border-top:1px solid var(--line);border-bottom:0;box-shadow:0 -10px 30px #0006}
+  nav button{min-height:62px;padding:8px 2px;font-size:11.5px;border-radius:14px}
+  nav button svg{width:24px;height:24px}
+  nav button.on::after{display:none}
+  select,input[type=number]{min-height:48px;font-size:16px}
+  #thumbs{grid-template-columns:repeat(auto-fill,80px)}#thumbs div{width:80px;height:80px}
+}
+
+/* ---- Prévia de impressão ---- */
+#pv{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:max(10px,env(safe-area-inset-top,0px)) 10px max(10px,env(safe-area-inset-bottom,0px));background:#000a;backdrop-filter:blur(4px)}
+#pv[hidden]{display:none}
+.pvbox{display:flex;flex-direction:column;width:min(760px,100%);max-height:100%;background:var(--panel);color:var(--tx);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 20px 60px #000a;overflow:hidden}
+.pvhead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.pvhead button{width:40px;min-height:40px;padding:0}
+.pvbody{flex:1;overflow:auto;padding:14px 16px;-webkit-overflow-scrolling:touch}
+.pvrow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.pvrow span{color:var(--mut);white-space:nowrap}.pvrow b{text-align:right}
+.pvw{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:10px;padding:10px 12px;background:#ffb02022;border:1px solid #ffb02088;border-radius:12px;font-size:13px}
+.pvw span{flex:1 1 220px}.pvw button{min-height:34px;padding:4px 14px;font-size:13px}
+#pvpages{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:14px}
+#pvpages figure{margin:0;flex:0 1 300px;text-align:center}
+#pvpages figcaption{margin-bottom:6px;font-size:13px;color:var(--mut)}
+#pvpages img{display:block;width:100%;height:auto;background:#fff;box-shadow:0 0 0 1px #0003,0 8px 24px #0006}
+.pvfoot{display:flex;flex-wrap:wrap;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
+.pvfoot button{flex:1 1 200px}
+
+/* ---- 11. Impressão ---- */
+@media print{
+  #pv{display:none!important}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{padding:0;background:#fff!important}
+  header,aside,.bar,.pglabel{display:none!important}
+  main{display:block;padding:0}
+  .desk{position:static;display:block;height:auto;overflow:visible;background:none;border:0;box-shadow:none}
+  #scroll{overflow:visible;padding:0;background:none}
+  #pages{display:block;width:auto}
+  .pg{width:auto!important;height:auto!important;break-after:page}
+  .pg:last-child{break-after:auto}
+  .sheet{position:static!important;transform:none!important;box-shadow:none!important}
+  .guides .sheet::after{display:none}
+  .cell.sel{box-shadow:none}
+  .cell.empty{background:none!important;color:transparent;box-shadow:none!important}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><i><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.8"/></svg></i><div><h1>Estúdio de Impressão de <em>Fotos</em></h1><small>Crie, organize e imprima suas lembranças</small></div></div>
+  <span class="badge" id="stat">0 fotos</span>
+  <button id="inst" hidden>📲 Instalar</button><button id="theme" aria-label="Alternar tema">🌓</button>
+  <button class="pri" id="print"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M7 14h10v7H7z"/></svg><span class="lbl">Imprimir</span></button>
+</header>
+
+<main>
+<aside>
+  <nav id="tabs"><button data-t="f" class="on"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>Fotos</button><button data-t="a"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Ajustes</button><button data-t="l"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="2" fill="currentColor"/><rect x="3" y="13" width="8" height="8" rx="2" fill="currentColor"/><rect x="13" y="13" width="8" height="8" rx="2" fill="currentColor"/></svg>Layout</button><button data-t="p"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M7 14h10v7H7z"/></svg>Imprimir</button></nav>
+
+  <!-- FOTOS -->
+  <div class="pane" id="t-f">
+    <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>Suas Fotos</h2><p class="tip">Envie várias de uma vez. Clique numa miniatura para editar.</p>
+    <div id="drop"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9H16"/><path d="M12 21v-9M9 15l3-3 3 3"/></svg><strong>Clique ou arraste as fotos aqui</strong><small>Suporte: JPG, PNG, WEBP</small></div>
+    <input type="file" id="file" accept="image/*" multiple hidden>
+    <div id="thumbs"></div>
+    <div class="btns"><button id="rot"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>Girar</button><button id="crop"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/></svg>Cortar</button><button id="del"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg>Remover</button><button id="clr"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4l-8 8"/><path d="M10 10l4 4-4.5 6.5H4L5 16z"/></svg>Limpar tudo</button></div>
+  </div>
+
+  <!-- AJUSTES -->
+  <div class="pane" id="t-a" hidden>
+    <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Ajustes da foto</h2><p class="tip" id="selinfo">Nenhuma foto selecionada.</p>
+    <div class="chips" id="filters"></div>
+    <div id="sl"></div>
+    <label>Enquadramento no espaço</label>
+    <select id="fit"><option value="cover">Preencher (corta as bordas)</option><option value="contain">Foto inteira (sobram bordas)</option></select>
+    <div class="btns"><button id="flip"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M8 7L3 12l5 5V7zM16 7l5 5-5 5V7z"/></svg>Espelhar</button><button id="reset"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>Restaurar</button><button id="applyAll" style="grid-column:1/-1">Aplicar a todas as fotos</button></div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="pane" id="t-l" hidden>
+    <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="2" fill="currentColor"/><rect x="3" y="13" width="8" height="8" rx="2" fill="currentColor"/><rect x="13" y="13" width="8" height="8" rx="2" fill="currentColor"/></svg>Folha de papel</h2><p class="tip">Tamanho, orientação, margens e tipo de papel.</p>
+    <div class="box" style="margin-top:12px"><b>🎨 Modelos prontos</b><p class="tip">Toque em um modelo: ele ajusta papel, tamanho e quantidade de fotos por folha.</p><div id="models"></div><p class="tip" id="mtip"></p></div>
+    <label>Tamanho do papel</label><select id="paper"></select>
+    <div class="row" id="cust" hidden><div><label>Largura (mm)</label><input type="number" id="cw0" value="210" min="30" max="1200"></div><div><label>Altura (mm)</label><input type="number" id="ch0" value="297" min="30" max="1200"></div></div>
+    <label>Orientação</label><select id="ori"><option value="p">Retrato</option><option value="l">Paisagem</option></select>
+    <div class="row"><div><label>Margem (mm)</label><input type="number" id="mar" value="5" min="0" max="60"></div><div><label>Espaço entre fotos (mm)</label><input type="number" id="gap" value="2" min="0" max="40"></div></div>
+    <div class="box"><label style="margin-top:0">Tipo de papel</label><select id="ptype"></select><p class="tip" id="ptip"></p></div>
+  
+    <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>Várias fotos na folha</h2><p class="tip">Escolha como as fotos se distribuem.</p>
+    <label>Método</label>
+    <select id="lmode"><option value="grid">Grade (colunas × linhas, ocupa a folha)</option><option value="fixed">Tamanho fixo da foto (encaixa o máximo)</option></select>
+    <div id="g-grid">
+      <div class="chips" id="presets"></div>
+      <div class="row"><div><label>Colunas</label><input type="number" id="cols" value="4" min="1" max="15"></div><div><label>Linhas</label><input type="number" id="rows" value="4" min="1" max="15"></div></div>
+    </div>
+    <div id="g-fix" hidden>
+      <label>Tamanho da foto</label><select id="psize"></select>
+      <div class="row"><div><label>Largura (mm)</label><input type="number" id="fw" value="30" min="5" max="600"></div><div><label>Altura (mm)</label><input type="number" id="fh" value="40" min="5" max="600"></div></div>
+      <label>Posição da foto</label><select id="pori"><option value="a">Melhor encaixe (automático)</option><option value="v">Em pé</option><option value="h">Deitada</option></select>
+    </div>
+    <div class="box">
+      <label style="margin-top:0">Como preencher</label>
+      <select id="mode"><option value="repeat">Repetir a foto selecionada em todos os espaços</option><option value="seq">Fotos diferentes (cria mais páginas se precisar)</option><option value="cycle">Diferentes, repetindo até encher a folha</option></select>
+      <label>Cópias de cada foto</label><input type="number" id="copies" value="1" min="1" max="50">
+    </div>
+    <div class="box">
+      <div class="row"><div><label style="margin-top:0">Borda (mm)</label><input type="number" id="bd" value="0" min="0" max="20" step=".5"></div><div><label style="margin-top:0">Cor da borda</label><input type="color" id="bc" value="#ffffff"></div></div>
+      <label>Cantos arredondados (mm)</label><input type="number" id="br" value="0" min="0" max="30" step=".5">
+      <div class="chk"><input type="checkbox" id="cutl" checked><span>Linhas guia de corte</span></div>
+      <div class="chk"><input type="checkbox" id="guides"><span>Mostrar margens no preview</span></div>
+    </div>
+    <p class="tip" id="cellinfo"></p>
+  </div>
+
+  <!-- IMPRIMIR -->
+  <div class="pane" id="t-p" hidden>
+    <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M7 14h10v7H7z"/></svg>Imprimir</h2><p class="tip">Wi‑Fi, Bluetooth ou USB — direto, sem baixar PDF.</p>
+    <label style="margin-top:12px">Qualidade da impressão</label>
+    <select id="qual"><option value="150">Rascunho · 150 dpi (rápido, economiza tinta)</option><option value="200">Normal · 200 dpi</option><option value="300" selected>Alta · 300 dpi (recomendado)</option><option value="400">Máxima · 400 dpi (mais lento)</option></select>
+    <p class="tip" id="qinfo"></p>
+    <button class="pri" id="print2" style="width:100%;margin-top:8px">🖨️ Imprimir</button>
+    <button id="share" hidden style="width:100%;margin-top:8px">📤 Enviar para o app da impressora</button>
+    <div class="box"><b>❓ A impressora não aparece?</b><p class="tip">A lista de impressoras é do próprio aparelho, o site não consegue criá-la. Se não aparecer, toque em <b>Enviar para o app da impressora</b>: no iPhone escolha “Imprimir” no menu; no Android escolha o app da marca (HP Smart, Epson, Canon…) ou o serviço de impressão. No iPhone, se o app instalado na tela inicial não abrir a janela de impressão, abra o site direto no Safari. No Android, confira em Configurações → Impressão se o serviço padrão/Mopria está ligado.</p></div>
+    <div class="box"><b>📶 Wi‑Fi</b><p class="tip">Deixe o aparelho na mesma rede da impressora. Ela aparece na janela de impressão (AirPrint, Mopria ou driver do fabricante).</p></div>
+    <div class="box"><b>🔵 Bluetooth</b><p class="tip">Pareie a impressora nas configurações do aparelho antes. O navegador não se conecta direto a impressoras Bluetooth, mas usa as que o sistema já reconhece.</p></div>
+    <div class="box"><b>🔌 USB ou PDF</b><p class="tip">Com cabo, é só selecionar a impressora. Sem impressora, escolha “Salvar como PDF” e leve o arquivo à gráfica.</p></div>
+    <div class="box"><b>📲 Instalar como app</b><p class="tip"><b>iPhone/iPad:</b> no Safari toque em Compartilhar → “Adicionar à Tela de Início”.<br><b>Android:</b> no Chrome toque em ⋮ → “Instalar app” (ou no botão 📲 Instalar do topo). Depois de instalado, abre em tela cheia e funciona sem internet.</p></div>
+    <div class="box"><b>📱 No celular</b><p class="tip">A janela de impressão do iOS (AirPrint) e do Android (Mopria) escolhe o papel e as cópias por ali. Selecione o mesmo tamanho de papel definido na aba Folha. Se o aparelho ignorar o tamanho, use “Salvar PDF” e imprima pelo app da sua impressora.</p></div>
+    <div class="box"><b>✅ Antes de imprimir</b><p class="tip">Escala <b>100%</b> (não “ajustar à página”), margens <b>nenhuma</b>, gráficos de plano de fundo <b>ligados</b>, e o mesmo tipo de papel configurado na impressora. Faça um teste em sulfite.</p></div>
+  </div>
+</aside>
+
+<section class="desk">
+  <div class="bar"><i class="chip"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></i><span id="info"></span><button id="zo" aria-label="Diminuir">−</button><output id="zv">100%</output><button id="zi" aria-label="Aumentar">+</button><button id="zf" aria-label="Ajustar à tela"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>
+  <div id="scroll"><div id="pages"></div></div>
+</section>
+</main>
+
+<div id="pv" hidden role="dialog" aria-modal="true" aria-label="Como vai sair na impressão">
+  <div class="pvbox">
+    <div class="pvhead"><b>👁️ Como vai sair na impressão</b><button id="pvx" aria-label="Fechar">✕</button></div>
+    <div class="pvbody"><div id="pvsum"></div><div id="pvwarn"></div><div id="pvpages"></div></div>
+    <div class="pvfoot"><button id="pvprint" class="pri">🖨️ Imprimir</button><button id="pvshare" hidden>📤 Enviar para o app da impressora</button></div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id),MM=3.7795;
+/* ---------- Dados ---------- */
+const PAPERS=[
+ ["ISO",[["A3",297,420],["A4",210,297],["A5",148,210],["A6",105,148],["B5",176,250]]],
+ ["Américas",[["Carta (Letter)",216,279],["Ofício (Legal)",216,356],["Tabloide",279,432],["Statement",140,216]]],
+ ["Fotográficos",[["9×13 cm",90,130],["10×15 cm (4×6 pol)",100,150],["13×18 cm (5×7 pol)",130,180],["15×21 cm",150,210],["18×24 cm",180,240],["20×25 cm (8×10 pol)",200,250],["20×30 cm",200,300],["30×40 cm",300,400]]],
+ ["Instantâneas",[["Instax mini",54,86],["Instax wide",108,86],["Polaroid",88,107]]]
+];
+const P={};
+$("paper").innerHTML=PAPERS.map(([g,a])=>`<optgroup label="${g}">`+a.map(([n,w,h])=>{P[n]=[w,h];return`<option value="${n}"${n=="A4"?" selected":""}>${n} · ${w}×${h} mm</option>`}).join("")+"</optgroup>").join("")+'<option value="custom">Personalizado…</option>';
+const PS=[["3×4 cm (documento)",30,40],["2×2 cm",20,20],["3,5×4,5 cm (passaporte)",35,45],["4×6 cm",40,60],["5×5 cm",50,50],["5×7 cm",50,70],["6×9 cm",60,90],["9×13 cm",90,130],["10×15 cm",100,150],["13×18 cm",130,180],["15×21 cm",150,210],["Instax mini",54,86],["Polaroid",88,107]];
+$("psize").innerHTML=PS.map(([n,w,h],i)=>`<option value="${i}">${n}</option>`).join("")+'<option value="x">Personalizado</option>';
+const TYPES={"Sulfite comum":"75–90 g/m². Econômico, bom para rascunhos e testes. Cores menos vivas.","Fotográfico brilhante":"180–260 g/m². Cores vivas e muito contraste. Evite tocar com os dedos e deixe secar.","Fotográfico fosco":"170–230 g/m². Sem reflexo, ótimo para retratos e molduras.","Cetim / semibrilho":"200–260 g/m². Meio‑termo entre brilho e fosco, acabamento profissional.","Couchê":"115–170 g/m². Boa nitidez para encartes, álbuns e cartões.","Adesivo fotográfico":"Para figurinhas e etiquetas. Use as linhas de corte e qualidade alta.","Cartão / cartolina":"200–300 g/m². Para cartões e fotos rígidas. Confira se a impressora aceita a espessura."};
+$("ptype").innerHTML=Object.keys(TYPES).map(k=>`<option>${k}</option>`).join("");
+const FILTERS={Original:[100,100,100,0,0],"Vívido":[105,115,140,0,0],Suave:[108,92,90,0,0],"P&B":[100,110,100,100,0],"Sépia":[102,100,90,0,70],Quente:[104,100,115,0,25]};
+const SL=[["b","Brilho",40,180],["c","Contraste",40,180],["s","Saturação",0,250],["g","Preto e branco",0,100],["p","Sépia",0,100],["z","Zoom (corte)",100,300],["ox","Mover ↔",-100,100],["oy","Mover ↕",-100,100]];
+$("sl").innerHTML=SL.map(([k,l,a,b])=>`<label>${l}<span class="val" id="v${k}"></span></label><input type="range" id="${k}" min="${a}" max="${b}" value="${["g","p","ox","oy"].includes(k)?0:100}">`).join("");
+$("filters").innerHTML=Object.keys(FILTERS).map(k=>`<button data-f="${k}">${k}</button>`).join("");
+const PRE=[["1×1",1,1],["2×1",2,1],["2×2",2,2],["3×2",3,2],["3×3",3,3],["4×4",4,4],["5×4",5,4],["6×4",6,4]];
+$("presets").innerHTML=PRE.map(([n,c,r])=>`<button data-c="${c}" data-r="${r}">${n}</button>`).join("");
+
+/* ---------- Estado ---------- */
+let photos=[],sel=-1,zoom=1;
+const DEF={b:100,c:100,s:100,g:0,p:0,z:100,ox:0,oy:0,fit:"cover",fl:0};
+const SAVE=["paper","ori","cw0","ch0","mar","gap","cols","rows","lmode","psize","fw","fh","pori","mode","copies","bd","bc","br","ptype","qual"];
+const filt=p=>`brightness(${p.b}%) contrast(${p.c}%) saturate(${p.s}%) grayscale(${p.g}%) sepia(${p.p}%)`;
+
+/* ---------- Geometria da folha ---------- */
+function geom(){
+  let w,h;
+  if($("paper").value==="custom"){w=+$("cw0").value||210;h=+$("ch0").value||297}else[w,h]=P[$("paper").value];
+  const o=$("ori").value;if((o==="p"&&w>h)||(o==="l"&&w<h))[w,h]=[h,w];
+  const m=+$("mar").value||0,g=+$("gap").value||0,fx=$("lmode").value==="fixed";
+  const cnt=(x,y)=>Math.max(1,Math.floor((w-2*m+g)/(x+g)))*Math.max(1,Math.floor((h-2*m+g)/(y+g)));
+  let C,R,cw,ch;
+  if(fx){
+    let a=+$("fw").value||30,b=+$("fh").value||40,q=$("pori").value;
+    if(q==="v"&&a>b||q==="h"&&a<b||(q==="a"&&cnt(b,a)>cnt(a,b)))[a,b]=[b,a];
+    cw=a;ch=b;C=Math.max(1,Math.floor((w-2*m+g)/(a+g)));R=Math.max(1,Math.floor((h-2*m+g)/(b+g)));
+  }else{
+    C=Math.max(1,+$("cols").value||1);R=Math.max(1,+$("rows").value||1);
+    cw=(w-2*m-g*(C-1))/C;ch=(h-2*m-g*(R-1))/R;
+  }
+  return{w,h,m,g,C,R,cw,ch,fx};
+}
+
+/* ---------- Render ---------- */
+function render(){
+  shareCache=null;
+  const G=geom(),cap=G.C*G.R,mode=$("mode").value,cp=Math.max(1,+$("copies").value||1),list=[];
+  photos.forEach((_,i)=>{for(let k=0;k<cp;k++)list.push(i)});
+  const pages=mode==="seq"?Math.max(1,Math.ceil(list.length/cap)):1;
+  const bd=+$("bd").value||0,br=+$("br").value||0;
+  let st=$("pstyle");if(!st){st=document.createElement("style");st.id="pstyle";document.head.appendChild(st)}
+  st.textContent=`@page{size:${G.w}mm ${G.h}mm;margin:0}`;
+  const pw=G.w*MM,ph=G.h*MM,avail=Math.max(200,$("scroll").clientWidth-46),s=Math.min(2.5,avail/pw)*zoom;
+  $("zv").textContent=Math.round(zoom*100)+"%";
+  const box=$("pages");box.innerHTML="";box.className=$("guides").checked?"guides":"";
+  for(let pg=0;pg<pages;pg++){
+    const wrap=document.createElement("div");wrap.className="pg";wrap.style.cssText=`width:${pw*s}px;height:${ph*s}px`;
+    const sh=document.createElement("div");sh.className="sheet"+($("cutl").checked?" cut":"");
+    const tr=G.fx?`repeat(${G.C},${G.cw}mm)`:`repeat(${G.C},1fr)`,tr2=G.fx?`repeat(${G.R},${G.ch}mm)`:`repeat(${G.R},1fr)`;
+    sh.style.cssText=`width:${G.w}mm;height:${G.h}mm;padding:${G.m}mm;gap:${G.g}mm;grid-template-columns:${tr};grid-template-rows:${tr2};justify-content:center;align-content:center;transform:scale(${s});--m:${G.m}mm;--bd:${bd}mm;--bc:${$("bc").value};--br:${br}mm`;
+    let used=0;
+    for(let i=0;i<cap;i++){
+      let idx=-1;
+      if(mode==="repeat")idx=sel;else if(mode==="seq")idx=list[pg*cap+i]??-1;else idx=list.length?list[i%list.length]:-1;
+      const d=document.createElement("div");
+      if(idx>=0&&photos[idx]){
+        const p=photos[idx],im=new Image();used++;
+        d.className="cell"+(idx===sel?" sel":"");im.src=p.src;im.draggable=false;
+        im.style.cssText=`object-fit:${p.fit};filter:${filt(p)};transform:translate(${p.ox*(p.z/100-1)/2}%,${p.oy*(p.z/100-1)/2}%) scale(${p.fl?-p.z/100:p.z/100},${p.z/100})`;
+        d.appendChild(im);d.onclick=()=>select(idx);
+      }else{d.className="cell empty";d.textContent="+"}
+      sh.appendChild(d);
+    }
+    const lab=document.createElement("div");lab.className="pglabel";lab.textContent=`Página ${pg+1} de ${pages} · ${G.w} × ${G.h} mm · ${used} foto${used==1?"":"s"}`;
+    wrap.appendChild(sh);const col=document.createElement("div");col.style.cssText="display:flex;flex-direction:column;align-items:center";col.append(lab,wrap);box.appendChild(col);
+  }
+  $("cellinfo").innerHTML=`<b>${cap}</b> espaços por folha · cada foto com <b>${G.cw.toFixed(1)} × ${G.ch.toFixed(1)} mm</b>`+(G.fx?` (${G.C} × ${G.R})`:"");
+  $("info").textContent=`${$("paper").value==="custom"?"Personalizado":$("paper").value.split(" (")[0]} • ${G.w} × ${G.h} mm • ${G.C}x${G.R}`;
+  try{updQ()}catch(e){}$("stat").textContent=`${photos.length} foto${photos.length==1?"":"s"} · ${pages} pág.`;
+  $("selinfo").textContent=sel>=0?`Editando a foto ${sel+1} de ${photos.length}.`:"Nenhuma foto selecionada.";
+  try{localStorage.setItem("cfg2",JSON.stringify(SAVE.map(k=>$(k).value)))}catch(e){}
+}
+
+/* ---------- Seleção e ajustes ---------- */
+function loadSliders(){const p=photos[sel]||DEF;SL.forEach(([k])=>{$(k).value=p[k];$("v"+k).textContent=p[k]+"%"});$("fit").value=p.fit}
+function select(i){sel=i;thumbs();loadSliders();render()}
+SL.forEach(([k])=>$(k).oninput=()=>{$("v"+k).textContent=$(k).value+"%";if(sel>=0){photos[sel][k]=+$(k).value;render()}});
+$("fit").onchange=()=>{if(sel>=0){photos[sel].fit=$("fit").value;render()}};
+$("filters").onclick=e=>{const f=FILTERS[e.target.dataset.f];if(!f||sel<0)return;["b","c","s","g","p"].forEach((k,i)=>photos[sel][k]=f[i]);loadSliders();render()};
+$("reset").onclick=()=>{if(sel>=0){Object.assign(photos[sel],DEF);loadSliders();render()}};
+$("applyAll").onclick=()=>{if(sel<0)return;const s=photos[sel];photos.forEach(p=>["b","c","s","g","p","z","ox","oy","fit","fl"].forEach(k=>p[k]=s[k]));render()};
+
+/* ---------- Fotos ---------- */
+function thumbs(){const t=$("thumbs");t.innerHTML="";photos.forEach((p,i)=>{const d=document.createElement("div");d.className=i===sel?"sel":"";d.innerHTML=`<img src="${p.src}" alt="Foto ${i+1}"><b>${i+1}</b>`;d.onclick=()=>select(i);t.appendChild(d)})}
+function addFiles(files){
+  const arr=[...files].filter(f=>f.type.startsWith("image/"));let left=arr.length;
+  arr.forEach(f=>{const r=new FileReader();r.onload=e=>{const im=new Image();im.onload=()=>{
+    const k=Math.min(1,2600/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    photos.push({src:c.toDataURL("image/jpeg",.92),...DEF});
+    if(--left===0){if(sel<0)sel=0;thumbs();loadSliders();render()}};im.src=e.target.result};r.readAsDataURL(f)});
+}
+$("drop").onclick=()=>$("file").click();
+$("file").onchange=e=>{addFiles(e.target.files);e.target.value=""};
+["dragover","dragenter"].forEach(v=>$("drop").addEventListener(v,e=>{e.preventDefault();$("drop").classList.add("over")}));
+["dragleave","drop"].forEach(v=>$("drop").addEventListener(v,e=>{e.preventDefault();$("drop").classList.remove("over")}));
+$("drop").addEventListener("drop",e=>addFiles(e.dataTransfer.files));
+$("rot").onclick=()=>{if(sel<0)return;const im=new Image();im.onload=()=>{const c=document.createElement("canvas");c.width=im.height;c.height=im.width;const x=c.getContext("2d");x.translate(c.width/2,c.height/2);x.rotate(Math.PI/2);x.drawImage(im,-im.width/2,-im.height/2);photos[sel].src=c.toDataURL("image/jpeg",.92);thumbs();render()};im.src=photos[sel].src};
+$("flip").onclick=()=>{if(sel>=0){photos[sel].fl=photos[sel].fl?0:1;render()}};
+$("crop").onclick=()=>$("tabs").querySelector("[data-t=a]").click();
+$("del").onclick=()=>{if(sel<0)return;photos.splice(sel,1);sel=photos.length?Math.min(sel,photos.length-1):-1;thumbs();loadSliders();render()};
+$("clr").onclick=()=>{photos=[];sel=-1;thumbs();loadSliders();render()};
+
+/* ---------- Folha e layout ---------- */
+function ui(){
+  $("cust").hidden=$("paper").value!=="custom";
+  $("g-grid").hidden=$("lmode").value==="fixed";$("g-fix").hidden=$("lmode").value!=="fixed";
+  $("ptip").textContent=TYPES[$("ptype").value];
+}
+$("psize").onchange=()=>{const v=$("psize").value;if(v!=="x"){$("fw").value=PS[v][1];$("fh").value=PS[v][2]}ui();render()};
+$("presets").onclick=e=>{const d=e.target.dataset;if(!d.c)return;$("cols").value=d.c;$("rows").value=d.r;render()};
+["paper","ori","cw0","ch0","mar","gap","cols","rows","lmode","fw","fh","pori","mode","copies","bd","bc","br","cutl","guides","ptype","qual"].forEach(id=>$(id).addEventListener("input",()=>{ui();render()}));
+
+/* ---------- Abas, zoom, tema, impressão ---------- */
+$("tabs").onclick=e=>{const t=e.target.dataset.t;if(!t)return;[...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.t===t));["f","a","l","p"].forEach(k=>$("t-"+k).hidden=k!==t)};
+const Z=v=>{zoom=Math.min(3,Math.max(.25,v));render()};
+$("zi").onclick=()=>Z(zoom*1.2);$("zo").onclick=()=>Z(zoom/1.2);$("zf").onclick=()=>Z(1);
+addEventListener("resize",render);
+/* ---------- Qualidade + impressão direta (sem baixar PDF) ---------- */
+const QUAL={"150":[150,.82],"200":[200,.88],"300":[300,.93],"400":[400,.96]},MAXPX=16e6;
+let shareCache=null,busy=false;
+const effDpi=(G,d)=>Math.min(d||+$("qual").value||300,Math.floor(Math.sqrt(MAXPX/((G.w/25.4)*(G.h/25.4)))));
+function updQ(){
+  const G=geom(),d=effDpi(G),req=+$("qual").value||300,W=Math.round(G.w*d/25.4),H=Math.round(G.h*d/25.4);
+  $("qinfo").textContent=`${W} × ${H} px por folha`+(d<req?` — reduzido para ${d} dpi (limite de memória do aparelho)`:"");
+}
+function setBusy(b,msg){
+  busy=b;["print","print2","share"].forEach(id=>{$(id).disabled=b});
+  if(msg!==undefined)$("qinfo").textContent=msg;if(!b)updQ();
+}
+function rr(c,x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h/2));c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();
+}
+/* Mesmo efeito dos filtros CSS (funciona também no Safari, que não tem ctx.filter) */
+function applyFilter(c,w,h,p){
+  if(p.b==100&&p.c==100&&p.s==100&&!p.g&&!p.p)return;
+  const im=c.getImageData(0,0,w,h),d=im.data,b=p.b/100,ct=p.c/100,s=p.s/100,ga=1-Math.min(1,p.g/100),sp=1-Math.min(1,p.p/100);
+  const doS=s!==1,doG=p.g>0,doP=p.p>0,cl=v=>v<0?0:v>255?255:v;
+  for(let i=0;i<d.length;i+=4){
+    if(!d[i+3])continue;
+    let r=cl(d[i]*b),g=cl(d[i+1]*b),u=cl(d[i+2]*b),t,v,z;
+    r=cl((r-127.5)*ct+127.5);g=cl((g-127.5)*ct+127.5);u=cl((u-127.5)*ct+127.5);
+    if(doS){t=cl(r*(.213+.787*s)+g*(.715-.715*s)+u*(.072-.072*s));v=cl(r*(.213-.213*s)+g*(.715+.285*s)+u*(.072-.072*s));z=cl(r*(.213-.213*s)+g*(.715-.715*s)+u*(.072+.928*s));r=t;g=v;u=z}
+    if(doG){t=cl(r*(.2126+.7874*ga)+g*(.7152-.7152*ga)+u*(.0722-.0722*ga));v=cl(r*(.2126-.2126*ga)+g*(.7152+.2848*ga)+u*(.0722-.0722*ga));z=cl(r*(.2126-.2126*ga)+g*(.7152-.7152*ga)+u*(.0722+.9278*ga));r=t;g=v;u=z}
+    if(doP){t=cl(r*(.393+.607*sp)+g*(.769-.769*sp)+u*(.189-.189*sp));v=cl(r*(.349-.349*sp)+g*(.686+.314*sp)+u*(.168-.168*sp));z=cl(r*(.272-.272*sp)+g*(.534-.534*sp)+u*(.131+.869*sp));r=t;g=v;u=z}
+    d[i]=r;d[i+1]=g;d[i+2]=u;
+  }
+  c.putImageData(im,0,0);
+}
+/* Desenha cada folha em alta resolução (mesma montagem do preview) */
+async function renderPages(opt={}){
+  const G=geom(),cap=G.C*G.R,mode=$("mode").value,cp=Math.max(1,+$("copies").value||1),list=[];
+  photos.forEach((_,i)=>{for(let n=0;n<cp;n++)list.push(i)});
+  const pages=mode==="seq"?Math.max(1,Math.ceil(list.length/cap)):1;
+  const dpi=effDpi(G,opt.dpi),k=dpi/25.4,jq=opt.jq||(QUAL[$("qual").value]||QUAL["300"])[1];
+  const imgs=await Promise.all(photos.map(p=>new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=p.src})));
+  const bd=(+$("bd").value||0)*k,br=(+$("br").value||0)*k,bc=$("bc").value,cut=$("cutl").checked;
+  const W=Math.round(G.w*k),H=Math.round(G.h*k);
+  const gw=G.C*G.cw+(G.C-1)*G.g,gh=G.R*G.ch+(G.R-1)*G.g;
+  const x0=G.m+(G.w-2*G.m-gw)/2,y0=G.m+(G.h-2*G.m-gh)/2,out=[];
+  for(let pg=0;pg<pages;pg++){
+    if(!opt.quiet)setBusy(true,`Preparando página ${pg+1} de ${pages}…`);await new Promise(r=>setTimeout(r,20));
+    const cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
+    x.fillStyle="#fff";x.fillRect(0,0,W,H);
+    for(let i=0;i<cap;i++){
+      let idx=-1;
+      if(mode==="repeat")idx=sel;else if(mode==="seq")idx=list[pg*cap+i]??-1;else idx=list.length?list[i%list.length]:-1;
+      const cx=(x0+(i%G.C)*(G.cw+G.g))*k,cy=(y0+Math.floor(i/G.C)*(G.ch+G.g))*k,cw=G.cw*k,ch=G.ch*k;
+      if(idx>=0&&photos[idx]){
+        const p=photos[idx],im=imgs[idx],bw=cw-2*bd,bh=ch-2*bd,z=p.z/100;
+        x.save();rr(x,cx,cy,cw,ch,br);x.fillStyle=bc;x.fill();x.restore();
+        const L=document.createElement("canvas");L.width=Math.ceil(cw);L.height=Math.ceil(ch);const lx=L.getContext("2d");
+        lx.save();rr(lx,0,0,cw,ch,br);lx.clip();
+        lx.translate(cw/2+p.ox*(z-1)/2/100*bw,ch/2+p.oy*(z-1)/2/100*bh);
+        lx.scale(p.fl?-z:z,z);
+        rr(lx,-bw/2,-bh/2,bw,bh,br-bd);lx.clip();
+        const sc=p.fit==="contain"?Math.min(bw/im.width,bh/im.height):Math.max(bw/im.width,bh/im.height);
+        lx.imageSmoothingQuality="high";lx.drawImage(im,-im.width*sc/2,-im.height*sc/2,im.width*sc,im.height*sc);
+        lx.restore();applyFilter(lx,L.width,L.height,p);
+        x.drawImage(L,cx,cy);L.width=L.height=0;
+      }
+      if(cut){const o=.075*k;x.save();x.lineWidth=.15*k;x.strokeStyle="#8a8a8a";rr(x,cx-o,cy-o,cw+2*o,ch+2*o,br+o);x.stroke();x.restore()}
+    }
+    const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",jq));
+    cv.width=cv.height=0;if(!blob)throw new Error("canvas");
+    out.push({blob,w:W,h:H});
+  }
+  return out;
+}
+/* PDF mínimo com as folhas em JPEG (para compartilhar com o app da impressora) */
+async function makePDF(out,G){
+  const enc=new TextEncoder(),parts=[],offs=[];let len=0;
+  const push=b=>{const u=typeof b==="string"?enc.encode(b):b;parts.push(u);len+=u.length};
+  const obj=(n,fn)=>{offs[n]=len;push(`${n} 0 obj\n`);fn();push("\nendobj\n")};
+  const N=out.length,pw=(G.w*72/25.4).toFixed(2),ph=(G.h*72/25.4).toFixed(2);
+  const bufs=await Promise.all(out.map(o=>o.blob.arrayBuffer()));
+  push("%PDF-1.4\n");
+  obj(1,()=>push("<</Type/Catalog/Pages 2 0 R>>"));
+  obj(2,()=>push(`<</Type/Pages/Count ${N}/Kids[${out.map((_,i)=>`${3+3*i} 0 R`).join(" ")}]>>`));
+  out.forEach((o,i)=>{
+    const pn=3+3*i,cs=`q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
+    obj(pn,()=>push(`<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${pw} ${ph}]/Resources<</XObject<</Im0 ${pn+2} 0 R>>>>/Contents ${pn+1} 0 R>>`));
+    obj(pn+1,()=>push(`<</Length ${cs.length}>>\nstream\n${cs}\nendstream`));
+    obj(pn+2,()=>{push(`<</Type/XObject/Subtype/Image/Width ${o.w}/Height ${o.h}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${bufs[i].byteLength}>>\nstream\n`);push(new Uint8Array(bufs[i]));push("\nendstream")});
+  });
+  const xr=len,total=3*N+3;
+  push(`xref\n0 ${total}\n0000000000 65535 f \n`);
+  for(let n=1;n<total;n++)push(String(offs[n]).padStart(10,"0")+" 00000 n \n");
+  push(`trailer\n<</Size ${total}/Root 1 0 R>>\nstartxref\n${xr}\n%%EOF`);
+  return new Blob(parts,{type:"application/pdf"});
+}
+/* Imprimir: monta as folhas prontas e abre a janela de impressão do sistema (sem baixar nada) */
+async function doPrint(){
+  if(busy)return;
+  if(!photos.length){alert("Adicione ao menos uma foto.");return}
+  const G=geom();let out;
+  try{out=await renderPages()}catch(e){setBusy(false);window.print();return}
+  setBusy(false);
+  const urls=out.map(o=>URL.createObjectURL(o.blob)),f=document.createElement("iframe");
+  f.style.cssText="position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none";
+  f.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><title>Fotos</title><style>@page{size:${G.w}mm ${G.h}mm;margin:0}html,body{margin:0;padding:0;background:#fff}img{display:block;width:${G.w}mm;height:${G.h}mm;break-after:page;page-break-after:always}img:last-child{break-after:auto;page-break-after:auto}</style></head><body>${urls.map(u=>`<img src="${u}">`).join("")}</body></html>`;
+  f.onload=async()=>{
+    const w=f.contentWindow;
+    try{await Promise.all([...w.document.images].map(i=>i.decode?i.decode().catch(()=>{}):0))}catch(e){}
+    try{w.focus();w.print()}catch(e){window.print()}
+    setTimeout(()=>{urls.forEach(u=>URL.revokeObjectURL(u));f.remove()},300000);
+  };
+  document.body.appendChild(f);
+}
+/* Enviar: abre o menu de compartilhar (no iPhone tem "Imprimir"; no Android, o app da impressora) */
+async function doShare(){
+  if(busy)return;
+  if(!photos.length){alert("Adicione ao menos uma foto.");return}
+  const G=geom();
+  try{
+    if(!shareCache){const out=await renderPages();shareCache=new File([await makePDF(out,G)],"fotos-para-imprimir.pdf",{type:"application/pdf"});setBusy(false)}
+    if(!(navigator.canShare&&navigator.canShare({files:[shareCache]}))){alert("Este navegador não permite compartilhar arquivos. Use o botão Imprimir.");return}
+    await navigator.share({files:[shareCache],title:"Fotos para imprimir"});
+    $("share").textContent="📤 Enviar para o app da impressora";
+  }catch(e){
+    setBusy(false);
+    if(e&&e.name==="NotAllowedError"&&shareCache){$("share").textContent="✅ Pronto! Toque para enviar";}
+    else if(!e||e.name!=="AbortError")alert("Não foi possível preparar o envio. Tente a qualidade Normal ou use o botão Imprimir.");
+  }
+}
+$("share").onclick=doShare;
+$("qual").addEventListener("input",()=>{shareCache=null;updQ()});
+$("share").hidden=!(navigator.canShare&&(()=>{try{return navigator.canShare({files:[new File(["x"],"a.pdf",{type:"application/pdf"})]})}catch(e){return false}})());
+$("theme").onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==="light"?"dark":"light";try{localStorage.setItem("th",r.dataset.theme)}catch(e){}};
+try{const th=localStorage.getItem("th");if(th)document.documentElement.dataset.theme=th;
+const c=JSON.parse(localStorage.getItem("cfg2")||"null");if(c)SAVE.forEach((k,i)=>{if(c[i]!=null)$(k).value=c[i]})}catch(e){}
+let dp;addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;$("inst").hidden=false});
+$("inst").onclick=async()=>{if(dp){dp.prompt();await dp.userChoice;dp=null;$("inst").hidden=true}};
+addEventListener("appinstalled",()=>$("inst").hidden=true);
+if("serviceWorker" in navigator&&location.protocol.startsWith("http"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+/* ---------- Modelos prontos de impressão ---------- */
+const MODELS=[
+ ["📄 Documentos",[
+  ["3×4 (documento)",{paper:"A4",lmode:"fixed",fw:30,fh:40,mode:"repeat"}],
+  ["Passaporte 3,5×4,5",{paper:"A4",lmode:"fixed",fw:35,fh:45,mode:"repeat"}],
+  ["2×2 cm",{paper:"A4",lmode:"fixed",fw:20,fh:20,mode:"repeat"}],
+  ["3×4 em papel 10×15",{paper:"10×15 cm (4×6 pol)",lmode:"fixed",fw:30,fh:40,mode:"repeat",mar:3}]
+ ]],
+ ["🖼️ Revelação (1 foto por folha)",[
+  ["10×15",{paper:"10×15 cm (4×6 pol)",cols:1,rows:1,mar:0,gap:0,cutl:false}],
+  ["13×18",{paper:"13×18 cm (5×7 pol)",cols:1,rows:1,mar:0,gap:0,cutl:false}],
+  ["9×13",{paper:"9×13 cm",cols:1,rows:1,mar:0,gap:0,cutl:false}],
+  ["A4 inteira",{paper:"A4",cols:1,rows:1,mar:5,gap:0,cutl:false}]
+ ]],
+ ["🗂️ Várias fotos na A4",[
+  ["10×15 · 2 por folha",{paper:"A4",lmode:"fixed",fw:100,fh:150,gap:3}],
+  ["13×18 · 2 por folha",{paper:"A4",lmode:"fixed",fw:130,fh:180,gap:3}],
+  ["9×13 · 4 por folha",{paper:"A4",lmode:"fixed",fw:90,fh:130}],
+  ["Grade 2×2",{paper:"A4",cols:2,rows:2,gap:3}],
+  ["Grade 3×3",{paper:"A4",cols:3,rows:3,gap:3}],
+  ["Mosaico 4×4",{paper:"A4",cols:4,rows:4,gap:1,mode:"cycle"}],
+  ["Miniaturas 5×4",{paper:"A4",cols:5,rows:4,gap:2}]
+ ]],
+ ["✨ Divertidos",[
+  ["Polaroid",{paper:"A4",lmode:"fixed",fw:88,fh:107,bd:3,gap:4}],
+  ["Instax mini",{paper:"A4",lmode:"fixed",fw:54,fh:86,bd:2,gap:3}],
+  ["Figurinhas 5×5",{paper:"A4",lmode:"fixed",fw:50,fh:50,br:6,gap:3,mode:"cycle"}]
+ ]]
+];
+$("models").innerHTML=MODELS.map(([g,a],gi)=>`<label style="margin-top:10px">${g}</label><div class="chips">`+a.map(([n],i)=>`<button data-g="${gi}" data-i="${i}">${n}</button>`).join("")+`</div>`).join("");
+function applyModel(m,name){
+  const d=Object.assign({ori:"p",mar:5,gap:2,lmode:"grid",pori:"a",mode:"seq",copies:1,bd:0,bc:"#ffffff",br:0,cutl:true,cols:2,rows:2},m);
+  ["paper","ori","mar","gap","lmode","pori","mode","copies","bd","bc","br"].forEach(k=>{$(k).value=d[k]});
+  $("cutl").checked=d.cutl;
+  if(d.lmode==="fixed"){$("fw").value=d.fw;$("fh").value=d.fh;const i=PS.findIndex(x=>x[1]===d.fw&&x[2]===d.fh);$("psize").value=i>=0?i:"x"}
+  else{$("cols").value=d.cols;$("rows").value=d.rows}
+  $("mtip").textContent=`Modelo “${name}” aplicado. Você pode ajustar o que quiser abaixo.`+(d.mode==="repeat"?" Selecione a foto que será repetida.":"");
+  ui();render();
+}
+$("models").onclick=e=>{const b=e.target.closest("button");if(!b)return;const [n,c]=MODELS[+b.dataset.g][1][+b.dataset.i];applyModel(c,n)};
+/* ---------- Prévia "como vai sair" antes de imprimir ---------- */
+let pvTok=0,pvUrls=[];
+const loadImg=src=>new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=src});
+function planInfo(){
+  const G=geom(),cap=G.C*G.R,mode=$("mode").value,cp=Math.max(1,+$("copies").value||1),list=[];
+  photos.forEach((_,i)=>{for(let n=0;n<cp;n++)list.push(i)});
+  const pages=mode==="seq"?Math.max(1,Math.ceil(list.length/cap)):1,used=new Set();let filled=0;
+  for(let pg=0;pg<pages;pg++)for(let i=0;i<cap;i++){
+    let idx=-1;
+    if(mode==="repeat")idx=sel;else if(mode==="seq")idx=list[pg*cap+i]??-1;else idx=list.length?list[i%list.length]:-1;
+    if(idx>=0&&photos[idx]){used.add(idx);filled++}
+  }
+  return{G,cap,mode,pages,used:[...used].sort((a,b)=>a-b),filled,empty:pages*cap-filled};
+}
+async function showPreview(){
+  if(busy)return;
+  if(!photos.length){alert("Adicione ao menos uma foto.");return}
+  $("pv").hidden=false;document.body.style.overflow="hidden";
+  await refreshPreview();
+}
+function closePreview(){$("pv").hidden=true;document.body.style.overflow="";pvTok++;pvUrls.forEach(u=>URL.revokeObjectURL(u));pvUrls=[]}
+async function refreshPreview(){
+  const tok=++pvTok,P=planInfo(),G=P.G,bd=+$("bd").value||0,warn=[];
+  const paperName=$("paper").value==="custom"?"Personalizado":$("paper").value.split(" (")[0];
+  $("pvpages").innerHTML='<p class="tip">Montando a prévia…</p>';
+  /* resolução real de cada foto no tamanho em que vai sair */
+  let dpis=[];
+  try{
+    const ims=await Promise.all(P.used.map(i=>loadImg(photos[i].src)));
+    dpis=P.used.map((i,n)=>{const p=photos[i],im=ims[n],bw=G.cw-2*bd,bh=G.ch-2*bd;
+      const sc=p.fit==="contain"?Math.min(bw/im.width,bh/im.height):Math.max(bw/im.width,bh/im.height);
+      return{n:i+1,d:Math.round(25.4/(sc*p.z/100))}});
+  }catch(e){}
+  if(tok!==pvTok)return;
+  const n=photos.length;
+  if(P.mode==="repeat"&&n>1)warn.push([`Você tem <b>${n} fotos</b>, mas este modo repete só a foto selecionada${sel>=0?` (foto ${sel+1})`:""}. Para usar todas, troque para fotos diferentes.`,"Usar as "+n+" fotos","seq"]);
+  else if(P.mode==="repeat"&&sel<0)warn.push(["Nenhuma foto está selecionada para repetir. Toque em uma foto da lista.",null]);
+  if(P.mode==="seq"&&P.empty>0&&P.filled>0)warn.push([`Sobram <b>${P.empty} espaço${P.empty==1?"":"s"} vazio${P.empty==1?"":"s"}</b> (ficam em branco no papel).`,"Preencher repetindo as fotos","cycle"]);
+  const fw=G.C*G.cw+(G.C-1)*G.g,fh=G.R*G.ch+(G.R-1)*G.g;
+  if(fw>G.w-2*G.m+.01||fh>G.h-2*G.m+.01)warn.push([`A foto de <b>${G.cw.toFixed(0)} × ${G.ch.toFixed(0)} mm</b> não cabe no papel ${paperName} com essa margem — vai ser cortada. Escolha um papel maior ou uma foto menor.`,null]);
+  const low=dpis.filter(x=>x.d<150);
+  if(low.length)warn.push([`Resolução baixa (pode ficar borrada): ${low.map(x=>`foto ${x.n} com ${x.d} dpi`).join(", ")}. O ideal é 200 dpi ou mais.`,null]);
+  if(G.m<4)warn.push([`Margem de ${G.m} mm: a maioria das impressoras não imprime nas bordas (cerca de 3–5 mm) e pode cortar a ponta da foto. Use margem 5 mm ou impressão sem bordas.`,null]);
+  const dtxt=dpis.length?(dpis.length<=8?dpis.map(x=>`foto ${x.n}: ${x.d} dpi ${x.d>=220?"✓":x.d>=150?"ok":"⚠️"}`).join(" · "):`menor resolução: ${Math.min(...dpis.map(x=>x.d))} dpi`):"";
+  $("pvsum").innerHTML=`<div class="pvrow"><span>📄 Papel</span><b>${paperName} · ${G.w} × ${G.h} mm</b></div><div class="pvrow"><span>🖼️ Cada foto</span><b>${G.cw.toFixed(1)} × ${G.ch.toFixed(1)} mm</b></div><div class="pvrow"><span>🗂️ Folhas</span><b>${P.pages} · ${P.filled} foto${P.filled==1?"":"s"} no total</b></div>`+(dtxt?`<div class="pvrow"><span>🔍 Resolução</span><b>${dtxt}</b></div>`:"")+`<p class="tip">Na janela da impressora escolha o <b>mesmo tamanho de papel (${paperName})</b> e escala <b>100%</b>.</p>`;
+  $("pvwarn").innerHTML=warn.map((w,i)=>`<div class="pvw">⚠️ <span>${w[0]}</span>${w[1]?`<button data-w="${i}">${w[1]}</button>`:""}</div>`).join("");
+  $("pvwarn").onclick=e=>{const b=e.target.closest("button[data-w]");if(!b)return;$("mode").value=warn[+b.dataset.w][2];render();refreshPreview()};
+  let out;
+  try{out=await renderPages({dpi:100,jq:.8,quiet:true})}catch(e){if(tok===pvTok)$("pvpages").innerHTML='<p class="tip">Não foi possível montar a prévia, mas você ainda pode imprimir.</p>';return}
+  if(tok!==pvTok)return;
+  pvUrls.forEach(u=>URL.revokeObjectURL(u));pvUrls=out.map(o=>URL.createObjectURL(o.blob));
+  $("pvpages").innerHTML=out.map((o,i)=>`<figure><figcaption>Folha ${i+1} de ${out.length} · ${G.w} × ${G.h} mm</figcaption><img src="${pvUrls[i]}" alt="Prévia da folha ${i+1}" style="aspect-ratio:${G.w}/${G.h}"></figure>`).join("");
+}
+$("pvx").onclick=closePreview;$("pv").addEventListener("click",e=>{if(e.target.id==="pv")closePreview()});
+$("pvprint").onclick=()=>{closePreview();doPrint()};
+$("pvshare").onclick=()=>{closePreview();doShare()};
+$("pvshare").hidden=$("share").hidden;
+$("print").onclick=showPreview;$("print2").onclick=showPreview;
+ui();render();
+</script>
+</body>
+</html>

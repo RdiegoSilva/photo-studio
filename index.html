@@ -155,6 +155,9 @@ nav button.on::after{content:"";position:absolute;left:16%;right:16%;bottom:0;he
   #thumbs{grid-template-columns:repeat(auto-fill,80px)}#thumbs div{width:80px;height:80px}
 }
 
+.fcell{cursor:move;touch-action:none;user-select:none;-webkit-user-select:none}
+.fcell img{pointer-events:none}
+.fcell .rz{position:absolute;right:0;bottom:0;width:22px;height:22px;background:linear-gradient(135deg,transparent 50%,#7c5cff 50%);cursor:nwse-resize}
 /* ---- Prévia de impressão ---- */
 #pv{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:max(10px,env(safe-area-inset-top,0px)) 10px max(10px,env(safe-area-inset-bottom,0px));background:#000a;backdrop-filter:blur(4px)}
 #pv[hidden]{display:none}
@@ -176,6 +179,7 @@ nav button.on::after{content:"";position:absolute;left:16%;right:16%;bottom:0;he
 /* ---- 11. Impressão ---- */
 @media print{
   #pv{display:none!important}
+  .rz{display:none!important}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   html,body{padding:0;background:#fff!important}
   header,aside,.bar,.pglabel{display:none!important}
@@ -235,7 +239,7 @@ nav button.on::after{content:"";position:absolute;left:16%;right:16%;bottom:0;he
   
     <h2><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>Várias fotos na folha</h2><p class="tip">Escolha como as fotos se distribuem.</p>
     <label>Método</label>
-    <select id="lmode"><option value="grid">Grade (colunas × linhas, ocupa a folha)</option><option value="fixed">Tamanho fixo da foto (encaixa o máximo)</option></select>
+    <select id="lmode"><option value="grid">Grade (colunas × linhas, ocupa a folha)</option><option value="fixed">Tamanho fixo da foto (encaixa o máximo)</option><option value="free">Livre — fotos diferentes, cada uma no seu tamanho (sem repetir, sem cortar)</option></select>
     <div id="g-grid">
       <div class="chips" id="presets"></div>
       <div class="row"><div><label>Colunas</label><input type="number" id="cols" value="4" min="1" max="15"></div><div><label>Linhas</label><input type="number" id="rows" value="4" min="1" max="15"></div></div>
@@ -245,7 +249,23 @@ nav button.on::after{content:"";position:absolute;left:16%;right:16%;bottom:0;he
       <div class="row"><div><label>Largura (mm)</label><input type="number" id="fw" value="30" min="5" max="600"></div><div><label>Altura (mm)</label><input type="number" id="fh" value="40" min="5" max="600"></div></div>
       <label>Posição da foto</label><select id="pori"><option value="a">Melhor encaixe (automático)</option><option value="v">Em pé</option><option value="h">Deitada</option></select>
     </div>
-    <div class="box">
+    <div id="g-free" hidden>
+      <p class="tip">Cada foto aparece <b>uma vez</b> e <b>inteira</b>, sem cortar. Toque numa foto da lista e escolha o tamanho. Na folha, arraste a foto para mover e use o canto roxo ◢ para mudar o tamanho.</p>
+      <div class="box">
+        <b id="fsel">Nenhuma foto selecionada</b>
+        <div class="row"><div><label>Largura (mm)</label><input type="number" id="mw" min="5" max="1200" step="1"></div><div><label>Altura (mm)</label><input type="number" id="mh" min="5" max="1200" step="1"></div></div>
+        <div class="chk"><input type="checkbox" id="mlock" checked><span>Manter a proporção da foto</span></div>
+        <label>Larguras rápidas</label><div class="chips" id="fpre"></div>
+        <div class="row"><div><label>Posição → (mm)</label><input type="number" id="mx" min="0" step="1"></div><div><label>Posição ↓ (mm)</label><input type="number" id="my" min="0" step="1"></div></div>
+      </div>
+      <div class="box">
+        <label style="margin-top:0">Mesma largura para todas (mm)</label>
+        <div class="row"><input type="number" id="allw" value="60" min="5" max="600"><button id="applyw">Aplicar a todas</button></div>
+        <button class="pri" id="autoarr" style="width:100%;margin-top:12px">🧩 Organizar automático (cabe tudo na folha)</button>
+        <p class="tip" id="ftip"></p>
+      </div>
+    </div>
+    <div class="box" id="fillbox">
       <label style="margin-top:0">Como preencher</label>
       <select id="mode"><option value="repeat">Repetir a foto selecionada em todos os espaços</option><option value="seq">Fotos diferentes (cria mais páginas se precisar)</option><option value="cycle">Diferentes, repetindo até encher a folha</option></select>
       <label>Cópias de cada foto</label><input type="number" id="copies" value="1" min="1" max="50">
@@ -324,6 +344,7 @@ function geom(){
   if($("paper").value==="custom"){w=+$("cw0").value||210;h=+$("ch0").value||297}else[w,h]=P[$("paper").value];
   const o=$("ori").value;if((o==="p"&&w>h)||(o==="l"&&w<h))[w,h]=[h,w];
   const m=+$("mar").value||0,g=+$("gap").value||0,fx=$("lmode").value==="fixed";
+  if($("lmode").value==="free")return{w,h,m,g,C:1,R:1,cw:0,ch:0,fx:false,free:true};
   const cnt=(x,y)=>Math.max(1,Math.floor((w-2*m+g)/(x+g)))*Math.max(1,Math.floor((h-2*m+g)/(y+g)));
   let C,R,cw,ch;
   if(fx){
@@ -342,12 +363,12 @@ function render(){
   shareCache=null;
   const G=geom(),cap=G.C*G.R,mode=$("mode").value,cp=Math.max(1,+$("copies").value||1),list=[];
   photos.forEach((_,i)=>{for(let k=0;k<cp;k++)list.push(i)});
-  const pages=mode==="seq"?Math.max(1,Math.ceil(list.length/cap)):1;
-  const bd=+$("bd").value||0,br=+$("br").value||0;
+  const pages=G.free?1:mode==="seq"?Math.max(1,Math.ceil(list.length/cap)):1;
+  const bd=+$("bd").value||0,br=+$("br").value||0;if(G.free)ensureFree();
   let st=$("pstyle");if(!st){st=document.createElement("style");st.id="pstyle";document.head.appendChild(st)}
   st.textContent=`@page{size:${G.w}mm ${G.h}mm;margin:0}`;
   const pw=G.w*MM,ph=G.h*MM,avail=Math.max(200,$("scroll").clientWidth-46),s=Math.min(2.5,avail/pw)*zoom;
-  $("zv").textContent=Math.round(zoom*100)+"%";
+  $("zv").textContent=Math.round(zoom*100)+"%";pxmm=MM*s;
   const box=$("pages");box.innerHTML="";box.className=$("guides").checked?"guides":"";
   for(let pg=0;pg<pages;pg++){
     const wrap=document.createElement("div");wrap.className="pg";wrap.style.cssText=`width:${pw*s}px;height:${ph*s}px`;
@@ -355,6 +376,19 @@ function render(){
     const tr=G.fx?`repeat(${G.C},${G.cw}mm)`:`repeat(${G.C},1fr)`,tr2=G.fx?`repeat(${G.R},${G.ch}mm)`:`repeat(${G.R},1fr)`;
     sh.style.cssText=`width:${G.w}mm;height:${G.h}mm;padding:${G.m}mm;gap:${G.g}mm;grid-template-columns:${tr};grid-template-rows:${tr2};justify-content:center;align-content:center;transform:scale(${s});--m:${G.m}mm;--bd:${bd}mm;--bc:${$("bc").value};--br:${br}mm`;
     let used=0;
+    if(G.free){
+      sh.style.display="block";
+      photos.forEach((p,idx)=>{
+        const d=document.createElement("div"),im=new Image();used++;
+        d.className="cell fcell"+(idx===sel?" sel":"");d.dataset.i=idx;
+        d.style.cssText=`position:absolute;box-sizing:border-box;left:${p.mx}mm;top:${p.my}mm;width:${p.mw}mm;height:${p.mh}mm`;
+        im.src=p.src;im.draggable=false;
+        im.style.cssText=`object-fit:contain;filter:${filt(p)};transform:scale(${p.fl?-1:1},1)`;
+        d.appendChild(im);const rz=document.createElement("i");rz.className="rz";d.appendChild(rz);
+        d.onclick=()=>{if(sel!==idx)select(idx)};
+        sh.appendChild(d);
+      });
+    }else
     for(let i=0;i<cap;i++){
       let idx=-1;
       if(mode==="repeat")idx=sel;else if(mode==="seq")idx=list[pg*cap+i]??-1;else idx=list.length?list[i%list.length]:-1;
@@ -370,9 +404,9 @@ function render(){
     const lab=document.createElement("div");lab.className="pglabel";lab.textContent=`Página ${pg+1} de ${pages} · ${G.w} × ${G.h} mm · ${used} foto${used==1?"":"s"}`;
     wrap.appendChild(sh);const col=document.createElement("div");col.style.cssText="display:flex;flex-direction:column;align-items:center";col.append(lab,wrap);box.appendChild(col);
   }
-  $("cellinfo").innerHTML=`<b>${cap}</b> espaços por folha · cada foto com <b>${G.cw.toFixed(1)} × ${G.ch.toFixed(1)} mm</b>`+(G.fx?` (${G.C} × ${G.R})`:"");
-  $("info").textContent=`${$("paper").value==="custom"?"Personalizado":$("paper").value.split(" (")[0]} • ${G.w} × ${G.h} mm • ${G.C}x${G.R}`;
-  try{updQ()}catch(e){}$("stat").textContent=`${photos.length} foto${photos.length==1?"":"s"} · ${pages} pág.`;
+  $("cellinfo").innerHTML=G.free?"<b>Modo livre:</b> cada foto aparece uma vez, inteira, sem cortar.":`<b>${cap}</b> espaços por folha · cada foto com <b>${G.cw.toFixed(1)} × ${G.ch.toFixed(1)} mm</b>`+(G.fx?` (${G.C} × ${G.R})`:"");
+  $("info").textContent=`${$("paper").value==="custom"?"Personalizado":$("paper").value.split(" (")[0]} • ${G.w} × ${G.h} mm • ${G.free?"livre":G.C+"x"+G.R}`;
+  try{updQ();syncFree()}catch(e){}$("stat").textContent=`${photos.length} foto${photos.length==1?"":"s"} · ${pages} pág.`;
   $("selinfo").textContent=sel>=0?`Editando a foto ${sel+1} de ${photos.length}.`:"Nenhuma foto selecionada.";
   try{localStorage.setItem("cfg2",JSON.stringify(SAVE.map(k=>$(k).value)))}catch(e){}
 }
@@ -392,7 +426,7 @@ function addFiles(files){
   const arr=[...files].filter(f=>f.type.startsWith("image/"));let left=arr.length;
   arr.forEach(f=>{const r=new FileReader();r.onload=e=>{const im=new Image();im.onload=()=>{
     const k=Math.min(1,2600/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);
-    photos.push({src:c.toDataURL("image/jpeg",.92),...DEF});
+    photos.push({src:c.toDataURL("image/jpeg",.92),ar:c.width/c.height,...DEF});
     if(--left===0){if(sel<0)sel=0;thumbs();loadSliders();render()}};im.src=e.target.result};r.readAsDataURL(f)});
 }
 $("drop").onclick=()=>$("file").click();
@@ -400,7 +434,7 @@ $("file").onchange=e=>{addFiles(e.target.files);e.target.value=""};
 ["dragover","dragenter"].forEach(v=>$("drop").addEventListener(v,e=>{e.preventDefault();$("drop").classList.add("over")}));
 ["dragleave","drop"].forEach(v=>$("drop").addEventListener(v,e=>{e.preventDefault();$("drop").classList.remove("over")}));
 $("drop").addEventListener("drop",e=>addFiles(e.dataTransfer.files));
-$("rot").onclick=()=>{if(sel<0)return;const im=new Image();im.onload=()=>{const c=document.createElement("canvas");c.width=im.height;c.height=im.width;const x=c.getContext("2d");x.translate(c.width/2,c.height/2);x.rotate(Math.PI/2);x.drawImage(im,-im.width/2,-im.height/2);photos[sel].src=c.toDataURL("image/jpeg",.92);thumbs();render()};im.src=photos[sel].src};
+$("rot").onclick=()=>{if(sel<0)return;const im=new Image();im.onload=()=>{const c=document.createElement("canvas");c.width=im.height;c.height=im.width;const x=c.getContext("2d");x.translate(c.width/2,c.height/2);x.rotate(Math.PI/2);x.drawImage(im,-im.width/2,-im.height/2);photos[sel].src=c.toDataURL("image/jpeg",.92);photos[sel].ar=c.width/c.height;if(photos[sel].mw!=null){const t=photos[sel].mw;photos[sel].mw=photos[sel].mh;photos[sel].mh=t}thumbs();render()};im.src=photos[sel].src};
 $("flip").onclick=()=>{if(sel>=0){photos[sel].fl=photos[sel].fl?0:1;render()}};
 $("crop").onclick=()=>$("tabs").querySelector("[data-t=a]").click();
 $("del").onclick=()=>{if(sel<0)return;photos.splice(sel,1);sel=photos.length?Math.min(sel,photos.length-1):-1;thumbs();loadSliders();render()};
@@ -409,7 +443,7 @@ $("clr").onclick=()=>{photos=[];sel=-1;thumbs();loadSliders();render()};
 /* ---------- Folha e layout ---------- */
 function ui(){
   $("cust").hidden=$("paper").value!=="custom";
-  $("g-grid").hidden=$("lmode").value==="fixed";$("g-fix").hidden=$("lmode").value!=="fixed";
+  {const lm=$("lmode").value;$("g-grid").hidden=lm!=="grid";$("g-fix").hidden=lm!=="fixed";$("g-free").hidden=lm!=="free";$("fillbox").hidden=lm==="free"}
   $("ptip").textContent=TYPES[$("ptype").value];
 }
 $("psize").onchange=()=>{const v=$("psize").value;if(v!=="x"){$("fw").value=PS[v][1];$("fh").value=PS[v][2]}ui();render()};
@@ -456,7 +490,8 @@ function applyFilter(c,w,h,p){
 async function renderPages(opt={}){
   const G=geom(),cap=G.C*G.R,mode=$("mode").value,cp=Math.max(1,+$("copies").value||1),list=[];
   photos.forEach((_,i)=>{for(let n=0;n<cp;n++)list.push(i)});
-  const pages=mode==="seq"?Math.max(1,Math.ceil(list.length/cap)):1;
+  const pages=G.free?1:mode==="seq"?Math.max(1,Math.ceil(list.length/cap)):1;
+  if(G.free)ensureFree();
   const dpi=effDpi(G,opt.dpi),k=dpi/25.4,jq=opt.jq||(QUAL[$("qual").value]||QUAL["300"])[1];
   const imgs=await Promise.all(photos.map(p=>new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=p.src})));
   const bd=(+$("bd").value||0)*k,br=(+$("br").value||0)*k,bc=$("bc").value,cut=$("cutl").checked;
@@ -467,19 +502,21 @@ async function renderPages(opt={}){
     if(!opt.quiet)setBusy(true,`Preparando página ${pg+1} de ${pages}…`);await new Promise(r=>setTimeout(r,20));
     const cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
     x.fillStyle="#fff";x.fillRect(0,0,W,H);
-    for(let i=0;i<cap;i++){
-      let idx=-1;
+    const total=G.free?photos.length:cap;
+    for(let i=0;i<total;i++){
+      let idx=-1,cx,cy,cw,ch;
+      if(G.free){idx=i;const q=photos[i];cx=q.mx*k;cy=q.my*k;cw=q.mw*k;ch=q.mh*k}else{
       if(mode==="repeat")idx=sel;else if(mode==="seq")idx=list[pg*cap+i]??-1;else idx=list.length?list[i%list.length]:-1;
-      const cx=(x0+(i%G.C)*(G.cw+G.g))*k,cy=(y0+Math.floor(i/G.C)*(G.ch+G.g))*k,cw=G.cw*k,ch=G.ch*k;
+      cx=(x0+(i%G.C)*(G.cw+G.g))*k;cy=(y0+Math.floor(i/G.C)*(G.ch+G.g))*k;cw=G.cw*k;ch=G.ch*k}
       if(idx>=0&&photos[idx]){
-        const p=photos[idx],im=imgs[idx],bw=cw-2*bd,bh=ch-2*bd,z=p.z/100;
+        const p=photos[idx],im=imgs[idx],bw=cw-2*bd,bh=ch-2*bd,z=G.free?1:p.z/100;
         x.save();rr(x,cx,cy,cw,ch,br);x.fillStyle=bc;x.fill();x.restore();
         const L=document.createElement("canvas");L.width=Math.ceil(cw);L.height=Math.ceil(ch);const lx=L.getContext("2d");
         lx.save();rr(lx,0,0,cw,ch,br);lx.clip();
         lx.translate(cw/2+p.ox*(z-1)/2/100*bw,ch/2+p.oy*(z-1)/2/100*bh);
         lx.scale(p.fl?-z:z,z);
         rr(lx,-bw/2,-bh/2,bw,bh,br-bd);lx.clip();
-        const sc=p.fit==="contain"?Math.min(bw/im.width,bh/im.height):Math.max(bw/im.width,bh/im.height);
+        const sc=(G.free||p.fit==="contain")?Math.min(bw/im.width,bh/im.height):Math.max(bw/im.width,bh/im.height);
         lx.imageSmoothingQuality="high";lx.drawImage(im,-im.width*sc/2,-im.height*sc/2,im.width*sc,im.height*sc);
         lx.restore();applyFilter(lx,L.width,L.height,p);
         x.drawImage(L,cx,cy);L.width=L.height=0;
@@ -573,6 +610,7 @@ const MODELS=[
   ["A4 inteira",{paper:"A4",cols:1,rows:1,mar:5,gap:0,cutl:false}]
  ]],
  ["🗂️ Várias fotos na A4",[
+  ["Livre (cada foto no seu tamanho)",{paper:"A4",lmode:"free",mar:5,gap:3}],
   ["10×15 · 2 por folha",{paper:"A4",lmode:"fixed",fw:100,fh:150,gap:3}],
   ["13×18 · 2 por folha",{paper:"A4",lmode:"fixed",fw:130,fh:180,gap:3}],
   ["9×13 · 4 por folha",{paper:"A4",lmode:"fixed",fw:90,fh:130}],
@@ -594,7 +632,7 @@ function applyModel(m,name){
   $("cutl").checked=d.cutl;
   if(d.lmode==="fixed"){$("fw").value=d.fw;$("fh").value=d.fh;const i=PS.findIndex(x=>x[1]===d.fw&&x[2]===d.fh);$("psize").value=i>=0?i:"x"}
   else{$("cols").value=d.cols;$("rows").value=d.rows}
-  $("mtip").textContent=`Modelo “${name}” aplicado. Você pode ajustar o que quiser abaixo.`+(d.mode==="repeat"?" Selecione a foto que será repetida.":"");
+  $("mtip").textContent=`Modelo “${name}” aplicado. Você pode ajustar o que quiser abaixo.`+(d.mode==="repeat"&&d.lmode!=="free"?" Selecione a foto que será repetida.":"")+(d.lmode==="free"?" Arraste as fotos na folha ou use “Organizar automático”.":"");
   ui();render();
 }
 $("models").onclick=e=>{const b=e.target.closest("button");if(!b)return;const [n,c]=MODELS[+b.dataset.g][1][+b.dataset.i];applyModel(c,n)};
@@ -602,6 +640,8 @@ $("models").onclick=e=>{const b=e.target.closest("button");if(!b)return;const [n
 let pvTok=0,pvUrls=[];
 const loadImg=src=>new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=src});
 function planInfo(){
+  const G0=geom();
+  if(G0.free){ensureFree();return{G:G0,cap:photos.length,mode:"free",pages:1,used:photos.map((_,i)=>i),filled:photos.length,empty:0,free:true}}
   const G=geom(),cap=G.C*G.R,mode=$("mode").value,cp=Math.max(1,+$("copies").value||1),list=[];
   photos.forEach((_,i)=>{for(let n=0;n<cp;n++)list.push(i)});
   const pages=mode==="seq"?Math.max(1,Math.ceil(list.length/cap)):1,used=new Set();let filled=0;
@@ -627,24 +667,33 @@ async function refreshPreview(){
   let dpis=[];
   try{
     const ims=await Promise.all(P.used.map(i=>loadImg(photos[i].src)));
-    dpis=P.used.map((i,n)=>{const p=photos[i],im=ims[n],bw=G.cw-2*bd,bh=G.ch-2*bd;
-      const sc=p.fit==="contain"?Math.min(bw/im.width,bh/im.height):Math.max(bw/im.width,bh/im.height);
-      return{n:i+1,d:Math.round(25.4/(sc*p.z/100))}});
+    dpis=P.used.map((i,n)=>{const p=photos[i],im=ims[n],bw=(P.free?p.mw:G.cw)-2*bd,bh=(P.free?p.mh:G.ch)-2*bd;
+      const sc=(P.free||p.fit==="contain")?Math.min(bw/im.width,bh/im.height):Math.max(bw/im.width,bh/im.height);
+      return{n:i+1,d:Math.round(25.4/(sc*(P.free?1:p.z/100)))}});
   }catch(e){}
   if(tok!==pvTok)return;
   const n=photos.length;
   if(P.mode==="repeat"&&n>1)warn.push([`Você tem <b>${n} fotos</b>, mas este modo repete só a foto selecionada${sel>=0?` (foto ${sel+1})`:""}. Para usar todas, troque para fotos diferentes.`,"Usar as "+n+" fotos","seq"]);
   else if(P.mode==="repeat"&&sel<0)warn.push(["Nenhuma foto está selecionada para repetir. Toque em uma foto da lista.",null]);
   if(P.mode==="seq"&&P.empty>0&&P.filled>0)warn.push([`Sobram <b>${P.empty} espaço${P.empty==1?"":"s"} vazio${P.empty==1?"":"s"}</b> (ficam em branco no papel).`,"Preencher repetindo as fotos","cycle"]);
+  if(P.free){
+    const bad=[],ov=[];
+    photos.forEach((p,i)=>{
+      if(p.mx<-.01||p.my<-.01||p.mx+p.mw>G.w+.01||p.my+p.mh>G.h+.01)bad.push(i+1);
+      for(let j=i+1;j<photos.length;j++){const q=photos[j];if(p.mx<q.mx+q.mw-.01&&p.mx+p.mw>q.mx+.01&&p.my<q.my+q.mh-.01&&p.my+p.mh>q.my+.01)ov.push(`${i+1} e ${j+1}`)}
+    });
+    if(bad.length)warn.push([`Foto${bad.length>1?"s":""} ${bad.join(", ")} ${bad.length>1?"saem":"sai"} da folha e ${bad.length>1?"serão cortadas":"será cortada"} pela impressora.`,"Organizar automático","auto"]);
+    if(ov.length)warn.push([`Fotos sobrepostas: ${ov.slice(0,4).join("; ")}${ov.length>4?"…":""}.`,"Organizar automático","auto"]);
+  }
   const fw=G.C*G.cw+(G.C-1)*G.g,fh=G.R*G.ch+(G.R-1)*G.g;
   if(fw>G.w-2*G.m+.01||fh>G.h-2*G.m+.01)warn.push([`A foto de <b>${G.cw.toFixed(0)} × ${G.ch.toFixed(0)} mm</b> não cabe no papel ${paperName} com essa margem — vai ser cortada. Escolha um papel maior ou uma foto menor.`,null]);
   const low=dpis.filter(x=>x.d<150);
   if(low.length)warn.push([`Resolução baixa (pode ficar borrada): ${low.map(x=>`foto ${x.n} com ${x.d} dpi`).join(", ")}. O ideal é 200 dpi ou mais.`,null]);
   if(G.m<4)warn.push([`Margem de ${G.m} mm: a maioria das impressoras não imprime nas bordas (cerca de 3–5 mm) e pode cortar a ponta da foto. Use margem 5 mm ou impressão sem bordas.`,null]);
   const dtxt=dpis.length?(dpis.length<=8?dpis.map(x=>`foto ${x.n}: ${x.d} dpi ${x.d>=220?"✓":x.d>=150?"ok":"⚠️"}`).join(" · "):`menor resolução: ${Math.min(...dpis.map(x=>x.d))} dpi`):"";
-  $("pvsum").innerHTML=`<div class="pvrow"><span>📄 Papel</span><b>${paperName} · ${G.w} × ${G.h} mm</b></div><div class="pvrow"><span>🖼️ Cada foto</span><b>${G.cw.toFixed(1)} × ${G.ch.toFixed(1)} mm</b></div><div class="pvrow"><span>🗂️ Folhas</span><b>${P.pages} · ${P.filled} foto${P.filled==1?"":"s"} no total</b></div>`+(dtxt?`<div class="pvrow"><span>🔍 Resolução</span><b>${dtxt}</b></div>`:"")+`<p class="tip">Na janela da impressora escolha o <b>mesmo tamanho de papel (${paperName})</b> e escala <b>100%</b>.</p>`;
+  $("pvsum").innerHTML=`<div class="pvrow"><span>📄 Papel</span><b>${paperName} · ${G.w} × ${G.h} mm</b></div><div class="pvrow"><span>🖼️ ${P.free?"Tamanhos":"Cada foto"}</span><b>${P.free?(n<=8?photos.map((p,i)=>`foto ${i+1}: ${p.mw.toFixed(0)}×${p.mh.toFixed(0)}`).join(" · ")+" mm":n+" fotos, cada uma com o seu tamanho"):`${G.cw.toFixed(1)} × ${G.ch.toFixed(1)} mm`}</b></div><div class="pvrow"><span>🗂️ Folhas</span><b>${P.pages} · ${P.filled} foto${P.filled==1?"":"s"} no total</b></div>`+(dtxt?`<div class="pvrow"><span>🔍 Resolução</span><b>${dtxt}</b></div>`:"")+`<p class="tip">Na janela da impressora escolha o <b>mesmo tamanho de papel (${paperName})</b> e escala <b>100%</b>.</p>`;
   $("pvwarn").innerHTML=warn.map((w,i)=>`<div class="pvw">⚠️ <span>${w[0]}</span>${w[1]?`<button data-w="${i}">${w[1]}</button>`:""}</div>`).join("");
-  $("pvwarn").onclick=e=>{const b=e.target.closest("button[data-w]");if(!b)return;$("mode").value=warn[+b.dataset.w][2];render();refreshPreview()};
+  $("pvwarn").onclick=e=>{const b=e.target.closest("button[data-w]");if(!b)return;const a=warn[+b.dataset.w][2];if(a==="auto")autoArrange();else{$("mode").value=a;render()}refreshPreview()};
   let out;
   try{out=await renderPages({dpi:100,jq:.8,quiet:true})}catch(e){if(tok===pvTok)$("pvpages").innerHTML='<p class="tip">Não foi possível montar a prévia, mas você ainda pode imprimir.</p>';return}
   if(tok!==pvTok)return;
@@ -656,6 +705,78 @@ $("pvprint").onclick=()=>{closePreview();doPrint()};
 $("pvshare").onclick=()=>{closePreview();doShare()};
 $("pvshare").hidden=$("share").hidden;
 $("print").onclick=showPreview;$("print2").onclick=showPreview;
+/* ---------- Modo livre: fotos diferentes, cada uma no seu tamanho, sem cortar ---------- */
+let pxmm=MM,drag=null;
+function shelfPack(items,W,H,m,g){
+  const order=[...items].sort((a,b)=>b.h-a.h),AW=W-2*m,AH=H-2*m,rows=[];let row={it:[],w:0,h:0};
+  for(const it of order){
+    if(it.w>AW+1e-6||it.h>AH+1e-6)return null;
+    if(row.it.length&&row.w+g+it.w>AW+1e-6){rows.push(row);row={it:[],w:0,h:0}}
+    row.w=row.it.length?row.w+g+it.w:it.w;row.it.push(it);row.h=Math.max(row.h,it.h);
+  }
+  if(row.it.length)rows.push(row);
+  const tot=rows.reduce((s,r)=>s+r.h,0)+g*(rows.length-1);
+  if(tot>AH+1e-6)return null;
+  let y=m+(AH-tot)/2;const pos={};
+  rows.forEach(r=>{let x=m+(AW-r.w)/2;r.it.forEach(it=>{pos[it.i]=[x,y+(r.h-it.h)/2];x+=it.w+g});y+=r.h+g});
+  return pos;
+}
+function defSize(p){if(p.ar==null)p.ar=(p.mw&&p.mh)?p.mw/p.mh:1;if(p.mw==null){const w=p.ar>=1?80:55;p.mw=w;p.mh=+(w/p.ar).toFixed(1)}}
+function autoArrange(silent){
+  if(!photos.length)return;
+  const G=geom();photos.forEach(defSize);
+  let f=1,pos=null;
+  for(let n=0;n<150&&!pos;n++){pos=shelfPack(photos.map((p,i)=>({i,w:p.mw*f,h:p.mh*f})),G.w,G.h,G.m,G.g);if(!pos)f*=.97}
+  if(!pos)return;
+  photos.forEach((p,i)=>{p.mw=+(p.mw*f).toFixed(1);p.mh=+(p.mh*f).toFixed(1);p.mx=+pos[i][0].toFixed(1);p.my=+pos[i][1].toFixed(1)});
+  $("ftip").textContent=f<1?`As fotos foram reduzidas para ${Math.round(f*100)}% para caber na folha.`:"Fotos organizadas na folha.";
+  if(!silent)render();
+}
+function placeNew(p){
+  const G=geom(),o=photos.filter(q=>q!==p&&q.mx!=null&&q.my!=null);
+  for(let y=G.m;y+p.mh<=G.h-G.m+1e-6;y+=5)for(let x=G.m;x+p.mw<=G.w-G.m+1e-6;x+=5){
+    if(!o.some(q=>x<q.mx+q.mw+G.g&&x+p.mw+G.g>q.mx&&y<q.my+q.mh+G.g&&y+p.mh+G.g>q.my)){p.mx=x;p.my=y;return true}
+  }
+  return false;
+}
+function ensureFree(){
+  let again=false;
+  photos.forEach(p=>{defSize(p);if((p.mx==null||p.my==null)&&!placeNew(p))again=true});
+  if(again)autoArrange(true);
+}
+function syncFree(){
+  const p=photos[sel];$("fsel").textContent=p?`Foto ${sel+1} de ${photos.length}`:"Nenhuma foto selecionada";
+  [["mw"],["mh"],["mx"],["my"]].forEach(([k])=>{const el=$(k);if(document.activeElement!==el)el.value=p&&p[k]!=null?+(+p[k]).toFixed(1):""});
+}
+["mw","mh","mx","my"].forEach(id=>$(id).addEventListener("input",()=>{
+  const p=photos[sel];if(!p)return;defSize(p);const v=parseFloat($(id).value);if(!(v>=0))return;
+  if(id==="mw"&&v>=1){p.mw=v;if($("mlock").checked)p.mh=+(v/p.ar).toFixed(1)}
+  else if(id==="mh"&&v>=1){p.mh=v;if($("mlock").checked)p.mw=+(v*p.ar).toFixed(1)}
+  else if(id==="mx")p.mx=v;else if(id==="my")p.my=v;else return;
+  render();
+}));
+$("fpre").innerHTML=[30,50,60,90,100,130,150].map(w=>`<button data-w="${w}">${w} mm</button>`).join("");
+$("fpre").onclick=e=>{const b=e.target.closest("button");const p=photos[sel];if(!b||!p)return;defSize(p);p.mw=+b.dataset.w;p.mh=+(p.mw/p.ar).toFixed(1);render()};
+$("applyw").onclick=()=>{const w=parseFloat($("allw").value);if(!(w>=5)||!photos.length)return;photos.forEach(p=>{defSize(p);p.mw=w;p.mh=+(w/p.ar).toFixed(1)});autoArrange()};
+$("autoarr").onclick=()=>autoArrange();
+/* arrastar para mover e usar o canto para redimensionar */
+$("pages").addEventListener("pointerdown",e=>{
+  const c=e.target.closest(".fcell");if(!c||e.button>0)return;
+  const i=+c.dataset.i,p=photos[i];if(!p)return;
+  if(sel!==i){sel=i;document.querySelectorAll(".fcell").forEach(el=>el.classList.toggle("sel",+el.dataset.i===i));thumbs();loadSliders();syncFree()}
+  drag={i,el:c,rz:!!e.target.closest(".rz"),x0:e.clientX,y0:e.clientY,mx:p.mx,my:p.my,mw:p.mw,mh:p.mh,moved:false};
+  try{c.setPointerCapture(e.pointerId)}catch(_){}
+  e.preventDefault();
+});
+$("pages").addEventListener("pointermove",e=>{
+  if(!drag)return;
+  const p=photos[drag.i],G=geom(),dx=(e.clientX-drag.x0)/pxmm,dy=(e.clientY-drag.y0)/pxmm;drag.moved=true;
+  if(drag.rz){const w=Math.max(5,drag.mw+dx);let h=Math.max(5,drag.mh+dy);if($("mlock").checked)h=w/p.ar;p.mw=+w.toFixed(1);p.mh=+h.toFixed(1)}
+  else{p.mx=+Math.min(Math.max(0,drag.mx+dx),Math.max(0,G.w-p.mw)).toFixed(1);p.my=+Math.min(Math.max(0,drag.my+dy),Math.max(0,G.h-p.mh)).toFixed(1)}
+  const st=drag.el.style;st.left=p.mx+"mm";st.top=p.my+"mm";st.width=p.mw+"mm";st.height=p.mh+"mm";syncFree();
+});
+const endDrag=()=>{if(!drag)return;const m=drag.moved;drag=null;if(m)render()};
+$("pages").addEventListener("pointerup",endDrag);$("pages").addEventListener("pointercancel",endDrag);
 ui();render();
 </script>
 </body>
